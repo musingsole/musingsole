@@ -41,15 +41,21 @@ class LambdaPage:
             status_code = 200
             body = resp
 
+        response =  {
+            "statusCode": status_code,
+            "headers": {"content-type": func.content_type},
+            "body": ''}
+
         content_type = func.content_type.split(';')[0]
         if not isinstance(body, str) and content_type != 'image/png':
             body = json.dumps(body)
+        if content_type == 'image/png':
+            response['isBase64Encoded'] = True
         if content_type not in \
             ['application/json', 'text/html', 'text/js', 'text/css', 'image/png']:
             body = body.encode()
-        return {"statusCode": status_code,
-                "headers": {"content-type": func.content_type},
-                "body": body}
+        response['body'] = body
+        return response
 
     def start_local(self, port=9000):
         import falcon
