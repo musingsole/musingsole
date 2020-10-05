@@ -14,6 +14,7 @@ template = """
 <title>{title}</title>
 </head>
 <body>
+<a href="/">Return to Root</a><br>
 {body}
 </body>
 </html>
