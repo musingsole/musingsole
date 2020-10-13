@@ -4,7 +4,7 @@ import requests
 import boto3
 from io import BytesIO
 from LambdaPage import LambdaPage
-from mistune import markdown
+from markdown import markdown as md_to_html
 import base64
 from urllib.parse import unquote as url_decode
 
@@ -12,6 +12,14 @@ from urllib.parse import unquote as url_decode
 template = """
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://igoradamenko.github.io/awsm.css/css/awsm.min.css">
+<script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous">
+</script>
+</style>
 <title>{title}</title>
 </head>
 <body>
@@ -118,7 +126,9 @@ def get_entry(event):
         entry = retrieve_entry(entry_title)        
         entry.body = replace_asset_links(entry.body)
         print(entry.body)
-        entry.body = markdown(entry.body) # .replace("\n", "<br>")
+        entry.body = md_to_html(entry.body,
+            extensions=['extra', 'toc', 'markdown_checklist.extension', 'nl2br'])
+        print(entry.body)
         entry_page = template.format(**entry.defn)
         return 200, entry_page
     except Exception as e:
@@ -159,11 +169,11 @@ def delete_entry(entry):
 
 def build_root():
     print("Building root")
-    template = "# Welcome to the Project Root\n![logo]({{asset.logo.png}})\n{body}"
+    template = "# Welcome to the Project Root\n##![logo]({{asset.logo.png}})\n{body}"
     body = ""
     for entry in [entry for entry in list_entries()
                   if entry not in ['', 'root']]:
-        body += f"[{entry}](entry/{entry})\n"
+        body += f"* [{entry}](entry/{entry})\n"
     write_entry(Entry("root", template.format(body=body)))
 
 

@@ -1,4 +1,5 @@
 requests
 boto3
-mistune
+markdown
+markdown-checklist
 pytz
