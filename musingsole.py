@@ -6,6 +6,7 @@ from io import BytesIO
 from LambdaPage import LambdaPage
 from mistune import markdown
 import base64
+from urllib.parse import unquote as url_decode
 
 
 template = """
@@ -76,15 +77,27 @@ def retrieve_asset_defn(asset_name):
     return Asset(**json.loads(content.read()))
 
 
-def retrieve_asset_link(asset_name):
-    print("Retrieving Asset Link")
-    s3_path = f"asset/{asset_name}"
+def retrieve_s3_presigned_url(s3_path):
     s3c = boto3.client("s3")
     url = s3c.generate_presigned_url('get_object',
                                      ExpiresIn=1800,
                                      Params={'Bucket': 'musingsole',
                                              'Key': s3_path})
     return url
+
+
+def retrieve_asset_link(asset_name):
+    print("Retrieving Asset Link")
+    s3_path = f"asset/{asset_name}"
+    return retrieve_s3_presigned_url(s3_path)
+
+
+def replace_s3_urls(body):
+    url = "https://musingsole.s3.amazonaws.com/asset/"
+    pattern = f"{url}(.*(\.png|\.jpg))"
+    for asset_name, asset_file_type in set(re.findall(pattern, body)):
+        body = body.replace(f"{url}{asset_name}", f"{{{{asset.{asset_name}}}}}")  
+    return body
 
 
 def replace_asset_links(body):
@@ -99,13 +112,13 @@ def get_entry(event):
     print("Getting entry")
     try:
         try:
-            entry_title = event['pathParameters']['entry_title']
+            entry_title = url_decode(event['pathParameters']['entry_title'])
         except Exception:
             entry_title = 'root'
         entry = retrieve_entry(entry_title)        
         entry.body = replace_asset_links(entry.body)
         print(entry.body)
-        entry.body = markdown(entry.body).replace("\n", "<br>")
+        entry.body = markdown(entry.body) # .replace("\n", "<br>")
         entry_page = template.format(**entry.defn)
         return 200, entry_page
     except Exception as e:
@@ -121,6 +134,12 @@ def write_s3(s3_path, content):
     s3b.upload_fileobj(content_bytes, s3_path)
 
 
+def delete_s3(s3_path):
+    print(f"Deleting {s3_path}")
+    s3b = boto3.resource("s3").Bucket("musingsole")
+    s3b.delete_objects(Delete={"Objects": [{"Key": s3_path}]})
+
+
 def write_json(s3_path, content):
     print("Writing JSON at {s3_path}")
     write_s3(s3_path, json.dumps(content))
@@ -132,13 +151,19 @@ def write_entry(entry):
     write_json(s3_path, entry.defn)
 
 
+def delete_entry(entry):
+    print(f"Deleting entry {entry.title}")
+    s3_path = f"entry/{entry.title}"
+    delete_s3(s3_path)
+
+
 def build_root():
     print("Building root")
     template = "# Welcome to the Project Root\n![logo]({{asset.logo.png}})\n{body}"
     body = ""
     for entry in [entry for entry in list_entries()
                   if entry not in ['', 'root']]:
-        body += f"[{entry}](entry/{entry})"
+        body += f"[{entry}](entry/{entry})\n"
     write_entry(Entry("root", template.format(body=body)))
 
 
@@ -148,20 +173,11 @@ def write_asset(asset):
     write_json(s3_path, asset.defn)
 
 
-def retrieve_asset(asset_name):
-    print("Retrieving {asset_name}")
-    asset_defn = retrieve_s3(f"asset/{asset_name}.defn")
-    asset_defn = retrieve_asset_defn(asset_name)
-    content = retrieve_s3(f"asset/{asset_name}")
-    content.seek(0)
-    return asset_defn, content
-
-
-def get_asset(event):
-    print("Getting asset")
+def get_favicon(event):
+    print("Getting favicon")
     try:
-        asset_defn, content = retrieve_asset(event['pathParameters']['asset_name'])
-        get_asset.content_type = asset_defn.content_type
+        content = retrieve_s3("asset/favicon-16x16.png")
+        content.seek(0)
         content = content.read()
         content = f"data:image/png;base64,{base64.b64encode(content).decode('utf-8')}"
         print(content)
@@ -174,8 +190,8 @@ def get_asset(event):
 
 def build_page():
     page = LambdaPage()
-    page.add_endpoint(method='get', path='/asset/{asset_name}', func=get_asset, content_type="text/html")
     page.add_endpoint(method='get', path='/entry/{entry_title}', func=get_entry, content_type="text/html")
+    page.add_endpoint(method='get', path='/favicon.ico', func=get_favicon, content_type='image/png')
     page.add_endpoint(method='get', path='/', func=get_entry, content_type="text/html")
     return page
 

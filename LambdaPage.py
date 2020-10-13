@@ -14,7 +14,7 @@ class LambdaPage:
     def add_endpoint(self, method, path, func, content_type='application/json', enable_caching=False):
         if path not in self.endpoints:
             self.endpoints[path] = {}
-        func.content_type = content_type
+        func.headers = {"content-type": content_type}
         func.enable_caching = enable_caching
         self.endpoints[path][method] = func
 
@@ -43,13 +43,13 @@ class LambdaPage:
 
         response =  {
             "statusCode": status_code,
-            "headers": {"content-type": func.content_type},
+            "headers": func.headers,
             "body": ''}
 
-        content_type = func.content_type.split(';')[0]
+        content_type = func.headers['content-type'].split(';')[0]
         if not isinstance(body, str) and content_type != 'image/png':
             body = json.dumps(body)
-        if content_type == 'image/png':
+        if content_type in ['image/png', 'image/x-icon']:
             response['isBase64Encoded'] = True
         if content_type not in \
             ['application/json', 'text/html', 'text/js', 'text/css', 'image/png']:

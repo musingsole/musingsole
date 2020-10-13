@@ -19,7 +19,7 @@ provider:
 functions:
   musingsole:
     name: musingsole
-    handler: blog.lambda_handler
+    handler: musingsole.lambda_handler
     memorySize: 128
     timeout: 30
     events:
@@ -27,8 +27,9 @@ functions:
           path: /entry/{entry_title}
           method: get
       - http:
-          path: /asset/{asset_name}
+          path: /favicon.ico
           method: get
+          cors: true
           contentHandling: CONVERT_TO_BINARY
       - http:
           path: /
