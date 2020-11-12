@@ -27,10 +27,8 @@ functions:
           path: /entry/{entry_title}
           method: get
       - http:
-          path: /favicon.ico
+          path: /aframe/{entry_title}
           method: get
-          cors: true
-          contentHandling: CONVERT_TO_BINARY
       - http:
           path: /
           method: get
