@@ -1,10 +1,4 @@
-import re
-import json
-import boto3
-from io import BytesIO
-from LambdaPage import LambdaPage
 from markdown import markdown as md_to_html
-import base64
 from urllib.parse import unquote as url_decode
 
 import s3
@@ -24,6 +18,8 @@ template = """
 </head>
 <body>
     <a-scene background="color: #0A0A0A">
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4" shadow></a-plane>
+        <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9" shadow></a-box>
         {scene}
     </a-scene>
 </body>
@@ -34,13 +30,6 @@ template = """
 class AframeEntry(content.Node):
     def __init__(self, title, scene, **kwargs):
         super().__init__(title=title, scene=scene, **kwargs)
-
-
-def list_entries():
-    print("Retrieving available entries")
-    resp = s3.list_contents("aframe/")
-    assert resp['IsTruncated'] is False
-    return [entry['Key'][len("aframe/"):] for entry in resp['Contents']]
 
 
 def retrieve_entry(entry_title):
@@ -59,7 +48,7 @@ def get_aframe_entry(event):
         entry = retrieve_entry(entry_title)
 
         if 'body' in entry.defn:
-            entry.body = replace_asset_links(entry.body)
+            entry.body = content.replace_asset_links(entry.body)
             entry.body = md_to_html(entry.body,
                                     extensions=['extra', 'toc', 'markdown_checklist.extension', 'nl2br'])
         else:

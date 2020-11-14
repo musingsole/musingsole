@@ -32,7 +32,7 @@ def retrieve_presigned_url(s3_path):
 def list_contents(s3_path):
     print(f"Listing {s3_path}")
     s3b = boto3.resource("s3").Bucket(bucket)
-    return s3b.objects.filter(Prefix=s3_path)
+    return [content.key[len(s3_path):] for content in s3b.objects.filter(Prefix=s3_path)]
 
 
 def write(s3_path, content):
