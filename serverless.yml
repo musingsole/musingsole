@@ -24,14 +24,18 @@ functions:
     timeout: 30
     events:
       - http:
+          path: /
+          method: get
+      - http:
           path: /entry/{entry_title}
           method: get
       - http:
-          path: /aframe/{entry_title}
+          path: /entry
           method: get
       - http:
-          path: /
+          path: /aframe
           method: get
+
 
 custom:
   pythonRequirements:

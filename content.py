@@ -1,6 +1,5 @@
 import re
 from urllib.parse import unquote as url_decode
-from functools import partial
 
 from markdown import markdown as md_to_html
 
@@ -21,7 +20,7 @@ class Node:
 
 def list_entries():
     print("Retrieving available entries")
-    return s3.list_contents("entry/")
+    return [e for e in s3.list_contents("entry/") if e != 'root']
 
 
 def retrieve_entry(entry_title):
@@ -52,10 +51,9 @@ def replace_asset_links(body):
 
 def build_root():
     print("Building root")
-    template = "# Welcome to the Project Root\n##![logo]({{asset.logo.png}})\n{body}"
+    template = "#![logo]({{asset.logo.png}})\n{body}"
     body = ""
-    for entry in [entry for entry in list_entries()
-                  if entry not in ['', 'root']]:
+    for entry in list_entries():
         body += f"* [{entry}](entry/{entry})\n"
     write_entry(Entry("root", template.format(body=body)))
 
@@ -64,6 +62,8 @@ def write_entry(entry):
     print(f"Writing entry {entry.title}")
     s3_path = f"entry/{entry.title}"
     s3.write_json(s3_path, entry.defn)
+    if entry.title != "root":
+        build_root()
 
 
 def delete_entry(entry):
@@ -85,9 +85,8 @@ template = """
 </style>
 <title>{title}</title>
 </head>
-<body>
-<a href="/">Return to Root</a><br>
-{body}
+<body
+>{body}
 </body>
 </html>
 """
@@ -103,6 +102,12 @@ def get_entry(event):
         entry = retrieve_entry(entry_title)
         entry.body = replace_asset_links(entry.body)
         entry.body = md_to_html(entry.body, extensions=['extra', 'toc', 'markdown_checklist.extension', 'nl2br'])
+        if entry.title != 'root':
+            entry.body = f'<a href="/">Return to Root</a><br>\n{entry.body}'
+            entry.title = f"OP - {entry.title}"
+        else:
+            entry.title = "Occultronic Provisions"
+
         entry_page = template.format(**entry.defn)
         return 200, entry_page
     except Exception:
@@ -118,6 +123,6 @@ class Entry(Node):
 
     def __init__(self, title, body):
         super().__init__(title=title, body=body)
-        self.retrieve_entry = partial(retrieve_entry, entry_title=self.title)
-        self.write_entry = partial(write_entry, entry=self)
-        self.delete_entry = partial(delete_entry, entry=self)
+        self.retrieve_entry = property(lambda self: retrieve_entry(self.title))
+        self.write_entry = property(write_entry)
+        self.delete_entry = property(delete_entry)

@@ -1,6 +1,4 @@
 from LambdaPage import LambdaPage
-from markdown import markdown as md_to_html
-from urllib.parse import unquote as url_decode
 
 from content import get_entry as get_md_entry
 from aframe import get_aframe_client
