@@ -1,0 +1,30 @@
+<html>
+<head>
+<script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous">
+</script>
+</style>
+<title>Occultronic Provisions</title>
+<script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+</head>
+<body>
+    <a-scene id="scene" background="color: #0A0A0A">
+        <a-entity id="camera" camera="active: true" look-controls wasd-controls="fly: true; acceleration: 200" position="0 1.6 0"></a-entity>
+
+        {scene}
+    </a-scene>
+</body>
+<script>
+    document.getElementById("scene").addEventListener("wheel", function(event){
+        const camera = document.getElementById("camera")
+        const modifier = 0.5
+        if (event.deltaY < 0){
+            camera.object3D.position.y += modifier
+        } else if (event.deltaY > 0){
+            camera.object3D.position.y -= modifier
+        }
+    });
+</script>
+</html>
