@@ -1,6 +1,9 @@
 import re
+import base64
 from functools import partial
+from PIL import Image
 import content
+import asset
 
 
 class Parser:
@@ -54,13 +57,30 @@ def header(chunk, match):
 
 def image(chunk, match):
     print(f"IMAGE CHUNK: {chunk}")
-    src_url = content.replace_asset_links(match.group(2))
+
+    asset_pattern = r"\{asset.(.*)\}"
+    asset_match = re.search(asset_pattern, match.group(2))
+    assert asset_match is not None
+    asset_name = asset_match.group(1)
+
+    asset_bytes = asset.retrieve_asset(asset_name)
+    im = Image.open(asset_bytes)
+    height = im.size[1] / 100
+    width = im.size[0] / 100
+    print(f"Height: {height}, Width: {width}")
+    asset_bytes.seek(0)
+    asset_b64 = base64.b64encode(asset_bytes.read())
     entity = """
-    <a-entity position="{position}" class="paragraph">
-        <a-entity geometry="primitive:box;width:9.6;height:1;depth:0.1"
-         material="src: {src_url}; color: navy" position="0 0 -0.1"></a-entity>
-    </a-entity>}"""
-    return partial(template_keyword_replace, template=entity, src_url=src_url), (1, 1, 0.1)
+    <a-entity position="{position}" class="image">
+        <a-image position="0 -{hl2} 0" src="data:image/jpeg;base64,{asset_b64}", height={height} width={width}>
+        <a-entity geometry="primitive:box;width:{width};height:{height};depth:0.1"
+         material="color: navy" position="0 0 -0.1"></a-entity>
+    </a-entity>"""
+    geo = (width, height + 1, 0.1)
+    print(geo)
+    return partial(template_keyword_replace, template=entity,
+                   asset_b64=asset_b64.decode("utf-8"),
+                   height=height, width=width, hl2=height / 2), geo
 
 
 def paragraph(chunk, match):
@@ -73,7 +93,8 @@ def paragraph(chunk, match):
         <a-entity geometry="primitive:box;width:9.6;height:{height};depth:0.1"
          material="color: navy" position="0 0 -0.1"></a-entity>
     </a-entity>"""
-    return partial(template_keyword_replace, template=entity, chunk=chunk, height=height), (1, 1.25, 0.1)
+    return partial(template_keyword_replace, template=entity,
+                   chunk=chunk, height=height), (1, 1.25, 0.1)
 
 
 dispatch = [
@@ -96,9 +117,8 @@ def parse_md(md, initial_position=[0, 0, 0], hbuff=0.1):
         if chunk == "":
             continue
         parsed, geo = parse(chunk)
-        position[1] -= (geo[1] + hbuff) / 2
         aframe_entity = parsed(position=", ".join([str(p) for p in position]))
-        position[1] -= (geo[1] + hbuff) / 2
+        position[1] -= (geo[1] + hbuff)
         yield aframe_entity
 
 

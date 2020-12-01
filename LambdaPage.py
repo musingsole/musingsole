@@ -47,12 +47,13 @@ class LambdaPage:
             "body": ''}
 
         content_type = func.headers['content-type'].split(';')[0]
-        if not isinstance(body, str) and content_type != 'image/png':
+        if not isinstance(body, str) and content_type not in ['image/png', 'image/jpg']:
             body = json.dumps(body)
-        if content_type in ['image/png', 'image/x-icon']:
-            response['isBase64Encoded'] = True
+        if content_type in ['image/png', 'image/jpg', 'image/x-icon']:
+            response['headers']['IsBase64Encoded'] = True
         if content_type not in \
-            ['application/json', 'text/html', 'text/js', 'text/css', 'image/png']:
+            ['application/json', 'text/html', 'text/js', 'text/css',
+             'image/png', 'image/jpg']:
             body = body.encode()
         response['body'] = body
         return response

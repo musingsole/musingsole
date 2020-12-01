@@ -11,6 +11,7 @@ def retrieve(s3_path):
     s3b = boto3.resource("s3").Bucket(bucket)
     contents = BytesIO()
     s3b.download_fileobj(s3_path, contents)
+    contents.seek(0)
     return contents
 
 

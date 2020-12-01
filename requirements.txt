@@ -3,3 +3,4 @@ boto3
 markdown
 markdown-checklist
 pytz
+Pillow
