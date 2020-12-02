@@ -111,8 +111,8 @@ def parse(chunk):
             return parsed, geo
 
 
-def parse_md(md, initial_position=[0, 0, 0], hbuff=0.1):
-    position = initial_position
+def parse_md(md, initial_position=None, hbuff=0.1):
+    position = initial_position if initial_position is not None else [0, 0, 0]
     for chunk in md.split("\n"):
         if chunk == "":
             continue
