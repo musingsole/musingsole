@@ -12,7 +12,7 @@ def build_page():
     page.add_endpoint(method='get', path='/entry', func=get_md_entry, content_type="text/html")
     page.add_endpoint(method='get', path='/entry/{entry_title}', func=get_md_entry, content_type="text/html")
     page.add_endpoint(method='get', path='/', func=get_md_entry, content_type="text/html")
-    page.add_endpoint(method='get', path='/aframe', func=get_aframe_client, content_type="text/html")
+    page.add_endpoint(method='get', path='/aframe/{entry_title}', func=get_aframe_client, content_type="text/html")
     return page
 
 

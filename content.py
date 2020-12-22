@@ -1,5 +1,6 @@
 import re
 from urllib.parse import unquote as url_decode
+from urllib.parse import quote as url_encode
 
 from markdown import markdown as md_to_html
 
@@ -85,8 +86,9 @@ template = """
 </style>
 <title>{title}</title>
 </head>
-<body
->{body}
+<body>
+<button onclick="location.href = '../../aframe/{urled_title}';" id="aframe_button" class="aframe-button">Aframify</button>
+{body}
 </body>
 </html>
 """
@@ -122,7 +124,7 @@ class Entry(Node):
     delete_entry = delete_entry
 
     def __init__(self, title, body):
-        super().__init__(title=title, body=body)
+        super().__init__(title=title, body=body, urled_title=url_encode(title))
         self.retrieve_entry = property(lambda self: retrieve_entry(self.title))
         self.write_entry = property(write_entry)
         self.delete_entry = property(delete_entry)

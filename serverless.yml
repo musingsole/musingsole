@@ -33,7 +33,7 @@ functions:
           path: /entry
           method: get
       - http:
-          path: /aframe
+          path: /aframe/{entry_title}
           method: get
           cors: true
 
