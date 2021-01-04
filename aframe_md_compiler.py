@@ -10,6 +10,7 @@ class Parser:
     patterns = {
         "header": r"^(#+) (.*)",
         "link": r"\[(.*)\]\((.*)\)",
+        "image_asset": r"!\[(.*)\]\(\{asset.(.*)\}\)",
         "image": r"!\[(.*)\]\((.*)\)",
         "paragraph": r".*"
     }
@@ -55,14 +56,9 @@ def header(chunk, match):
     return entity, (1, height, 0.1)
 
 
-def image(chunk, match):
-    print(f"IMAGE CHUNK: {chunk}")
-
-    asset_pattern = r"\{asset.(.*)\}"
-    asset_match = re.search(asset_pattern, match.group(2))
-    assert asset_match is not None
-    asset_name = asset_match.group(1)
-
+def parse_asset_link(chunk, match):
+    print(f"IMAGE ASSET CHUNK: {chunk}")
+    asset_name = match.group(2)
     asset_bytes = asset.retrieve_asset(asset_name)
     im = Image.open(asset_bytes)
     height = im.size[1] / 100
@@ -83,6 +79,21 @@ def image(chunk, match):
                    height=height, width=width, hl2=height / 2), geo
 
 
+def image(chunk, match):
+    print(f"IMAGE CHUNK: {chunk}")
+    image_url = match.group(2)
+    entity = """
+    <a-entity position="{position}" class="image">
+        <a-image position="0 -50 0" src="{image_url}", height=100 width=100>
+        <a-entity geometry="primitive:box;width:100;height:100;depth:0.1"
+         material="color: navy" position="0 0 -0.1"></a-entity>
+    </a-entity>"""
+    geo = (100, 100 + 1, 0.1)
+    print(geo)
+    return partial(template_keyword_replace, template=entity,
+                   image_url=image_url), geo
+
+
 def paragraph(chunk, match):
     print(f"PARAGRAPH CHUNK: {chunk}")
     height = max(len(chunk) / 580, 1)
@@ -98,6 +109,7 @@ def paragraph(chunk, match):
 
 
 dispatch = [
+    Parser(Parser.patterns['image_asset'], parse_asset_link),
     Parser(Parser.patterns['image'], image),
     Parser(Parser.patterns['header'], header),
     Parser(Parser.patterns['paragraph'], paragraph)
@@ -136,8 +148,6 @@ setattr(content.Entry, 'to_scene', entry_to_scene)
 #     pass
 
 
-
-
 # def bullet(chunk):
 #     pass
 
@@ -152,34 +162,3 @@ setattr(content.Entry, 'to_scene', entry_to_scene)
 
 # def horizontal_rule(chunk):
 #     pass
-
-
-# def text(chunk):
-#     pass
-
-
-# dispatch = {
-#     header.pattern: header,
-#     r"\[.*\]\(.*\)": link,
-#     r"!\[.*\]\(.*)": image,
-#     r"\s*[\*, \+, -] ": bullet,
-#     r"\s*\d\. ": ordered_list,
-#     r"\s*[\*, \+, -] \[[\s, X, x]\]": checkbox,
-#     r"^[\*, -]{3}": horizontal_rule,
-#     "default": text
-# }
-
-
-# def match_and_dispatch(chunk):
-#     for pattern, func in dispatch.items():
-#         if pattern == "default" or re.match(pattern, chunk):
-#             return func(chunk)
-#     raise Exception("Unmatched")
-
-
-# def compile_md_to_aframe(md_string):
-#     scene = []
-#     for chunk in md_string.split("\n\n"):
-#         for pattern, handler in dispatch.items():
-#             if re.search(pattern, chunk):
-#                 scene.append(handler(chunk))

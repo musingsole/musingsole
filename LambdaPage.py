@@ -41,7 +41,7 @@ class LambdaPage:
             status_code = 200
             body = resp
 
-        response =  {
+        response = {
             "statusCode": status_code,
             "headers": func.headers,
             "body": ''}
@@ -109,7 +109,7 @@ class LambdaPage:
 
         resource = LambdaPageFalconResource(request_handler=self.handle_request)
         for path in self.endpoints:
-                app.add_route(path, resource)
+            app.add_route(path, resource)
         self.httpd = simple_server.make_server('127.0.0.1', port, app)
         self.httpd.serve_forever()
 

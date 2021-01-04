@@ -1,11 +1,7 @@
-import re
 import base64
 from urllib.parse import unquote as url_decode
 
-from markdown import markdown as md_to_html
-
 import s3
-import content
 
 
 def list_assets():
